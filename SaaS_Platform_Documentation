@@ -1,0 +1,1634 @@
+# COMPREHENSIVE SAAS PLATFORM DOCUMENTATION
+
+## Table of Contents
+1. Executive Summary & Platform Overview
+2. Platform Architecture (Multi-Product Design)
+3. Product 1: API Monitoring & Change Detection
+4. Product 2: API Flow Builder (Low-Code)
+5. Product 3: Database Schema Evolution
+6. Product 4: Cloud Agnostic Testing Console
+7. Cloud Infrastructure (Azure Primary + Multi-Cloud Support)
+8. Database & Data Architecture
+9. Security, Compliance & Cost Optimization
+10. Implementation Timeline & DevOps Strategy
+
+---
+
+# PAGE 1: EXECUTIVE SUMMARY & PLATFORM OVERVIEW
+
+## Vision
+A unified SaaS platform enabling enterprises to monitor, design, evolve, and test APIs across multiple cloud environments (Azure, AWS, GCP, On-Premise) with minimal engineering overhead.
+
+## Four Core Products
+
+| Product | Use Case | Primary Users | Pricing Model |
+|---------|----------|---------------|---------------|
+| **API Monitor** | Real-time API health, breaking changes, performance | DevOps, Platform Engineers | $299-$999/mo (per connector) |
+| **Flow Builder** | Visual API/workflow design without coding | Product Managers, Business Analysts | $199-$599/mo (per org) |
+| **Schema Evolution** | Database migration tracking & versioning | DBAs, Backend Engineers | $399-$1299/mo (per database) |
+| **Test Console** | Cloud-agnostic API testing & validation | QA Engineers, DevOps | $99-$399/mo (per project) |
+
+## Target Market
+- **Segment 1**: Large enterprises (500+ employees) with multi-cloud strategies
+- **Segment 2**: API-first startups requiring observability early
+- **Segment 3**: Managed service providers (MSPs) building internal tools
+
+## Revenue Projections (Year 1)
+- **Month 3**: $15K MRR (3 enterprise customers)
+- **Month 6**: $45K MRR (12 customers)
+- **Month 12**: $120K MRR (35+ customers)
+
+---
+
+# PAGE 2: PLATFORM ARCHITECTURE (MULTI-PRODUCT DESIGN)
+
+## High-Level System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    SAAS PLATFORM                            │
+├─────────────────────────────────────────────────────────────┤
+│                   Frontend Layer (Next.js)                   │
+│  ┌──────────┬──────────┬──────────┬──────────┐              │
+│  │ Monitor  │ Builder  │ Schema   │ Console  │              │
+│  │ Dashboard│ UI       │ Tracker  │ UI       │              │
+│  └──────────┴──────────┴──────────┴──────────┘              │
+├─────────────────────────────────────────────────────────────┤
+│              API Gateway (Azure API Management)              │
+│         [Authentication | Rate Limiting | Logging]          │
+├─────────────────────────────────────────────────────────────┤
+│                   Backend Microservices                      │
+│  ┌─────────────┬──────────────┬──────────┬──────────┐       │
+│  │ Auth Service│ Monitor Core │ Builder  │ Test     │       │
+│  │ (OAuth 2.0) │ Service      │ Engine   │ Engine   │       │
+│  └─────────────┴──────────────┴──────────┴──────────┘       │
+├─────────────────────────────────────────────────────────────┤
+│              Data Layer (PostgreSQL + Redis)                 │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │ PostgreSQL: Org | Users | Connectors | Workflows    │   │
+│  │ Redis: Cache | Sessions | Real-time Events          │   │
+│  └──────────────────────────────────────────────────────┘   │
+├─────────────────────────────────────────────────────────────┤
+│           Integration Layer (Cloud Connectors)               │
+│  ┌──────────┬────────┬─────────┬──────────┬──────────┐      │
+│  │ Azure    │ AWS    │ GCP     │ On-Prem  │ Custom   │      │
+│  │ Connector│Connect │Connector│ Proxy    │ Webhooks │      │
+│  └──────────┴────────┴─────────┴──────────┴──────────┘      │
+├─────────────────────────────────────────────────────────────┤
+│              External Services (3rd Party)                   │
+│  ┌──────────┬──────────┬───────────┬──────────┐              │
+│  │ Stripe   │ SendGrid │ Auth0/    │ Segment  │              │
+│  │ Payment  │ Email    │ Azure AD  │ Analytics│              │
+│  └──────────┴──────────┴───────────┴──────────┘              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Architectural Principles
+
+### 1. **Multi-Tenancy**
+- Row-level security (RLS) with PostgreSQL policies
+- Tenant ID in JWT token for request isolation
+- Separate Redis namespaces per tenant
+- Resource quotas enforced at API Gateway level
+
+### 2. **Microservices Design**
+- Each product = independent service with own database schema
+- Event-driven communication via Azure Service Bus
+- Shared authentication layer (centralized)
+- Circuit breakers for inter-service calls
+
+### 3. **Cloud Agnostic Connectors**
+- Adapter pattern for cloud-specific authentication
+- Generic HTTP wrapper for REST APIs
+- SSH tunnel support for on-premise systems
+- Custom webhook handlers
+
+### 4. **Real-Time Processing**
+- WebSocket support for live API monitoring
+- Azure Event Hubs for high-volume event ingestion
+- Apache Kafka (alternative) for on-premise deployments
+- Redis Streams for local real-time queues
+
+## Technology Stack
+
+| Layer | Azure Primary | Alternative | Purpose |
+|-------|---------------|-------------|---------|
+| **Frontend** | Next.js 14 | React/Vue | SPA with SSR |
+| **Backend** | Node.js 20 + Express | Python/Go | REST API + WebSockets |
+| **Database** | PostgreSQL (Flexible Server) | RDS/Cloud SQL | Primary data store |
+| **Cache** | Redis (Azure Cache) | ElastiCache/MemoryStore | Session + cache |
+| **Message Queue** | Azure Service Bus | RabbitMQ/Kafka | Async events |
+| **Storage** | Azure Blob Storage | S3/GCS | Backups + exports |
+| **Monitoring** | Application Insights | DataDog/NewRelic | Observability |
+| **Auth** | Azure AD B2C | Auth0/Okta | Identity management |
+
+---
+
+# PAGE 3: PRODUCT 1 - API MONITORING & CHANGE DETECTION
+
+## Product Overview
+Real-time monitoring of APIs with automatic schema change detection, breaking change alerts, and performance metrics.
+
+## Core Features
+
+### Feature 1: API Connector Management
+- Connect APIs via API keys, OAuth 2.0, mTLS certificates
+- Support for OpenAPI 3.0, Swagger 2.0 specifications
+- Automatic endpoint discovery from OpenAPI schemas
+- Rate limit tracking per API
+
+### Feature 2: Real-Time Monitoring
+- Call latency tracking (p50, p95, p99)
+- Response time heatmaps
+- Error rate tracking (4xx, 5xx)
+- Throughput monitoring (requests/second)
+
+### Feature 3: Breaking Change Detection
+- Automatic schema diff detection
+- Categorization: BREAKING, NON_BREAKING, DEPRECATED
+- Impact analysis (downstream services affected)
+- Slack/Email notifications with webhooks
+
+### Feature 4: Historical Analytics
+- API call trends over 30/60/90 days
+- Top endpoints by traffic
+- Most common error types
+- Performance regression detection
+
+## System Design
+
+### Component Architecture
+```
+┌────────────────────────────────────────────┐
+│        Monitor Dashboard (Next.js)         │
+│  - Real-time metrics | Alerts | Trends    │
+└────────────────┬─────────────────────────┘
+                 │
+┌────────────────▼──────────────────────────┐
+│      Monitor API Gateway (Express)        │
+│  - Authentication | Rate Limiting         │
+└────────────────┬──────────────────────────┘
+                 │
+┌────────────────▼──────────────────────────┐
+│      Core Monitor Service                 │
+│  ┌─────────────────────────────────────┐  │
+│  │ 1. API Connector Handler            │  │
+│  │ 2. Schema Fetcher                   │  │
+│  │ 3. Change Detector                  │  │
+│  │ 4. Metrics Aggregator               │  │
+│  │ 5. Alert Manager                    │  │
+│  └─────────────────────────────────────┘  │
+└────────────────┬──────────────────────────┘
+                 │
+    ┌────────────┼────────────┐
+    │            │            │
+┌───▼──┐   ┌────▼────┐   ┌──▼─────┐
+│ PG   │   │  Redis  │   │ Service │
+│      │   │ (Cache) │   │ Bus     │
+└──────┘   └─────────┘   └────────┘
+```
+
+### Data Flow
+
+**1. Connector Setup (User Action)**
+```
+User → Configure API Endpoint → API Credentials → 
+Store Encrypted in PG → Service Bus Event → 
+Scheduler starts monitoring
+```
+
+**2. Real-Time Monitoring Loop**
+```
+Scheduler (runs every 60s) →
+→ Fetch Latest Schema from Target API →
+→ Compare with Previous Schema in Cache →
+→ Detect Changes (breaking/non-breaking) →
+→ Store Metrics in TimeSeries DB →
+→ Publish Alert if Breaking Change →
+→ Update Dashboard via WebSocket
+```
+
+**3. Breaking Change Alert Flow**
+```
+Schema Change Detected →
+→ Categorize Change Severity →
+→ Analyze Downstream Impact →
+→ Format Alert Message →
+→ Send Slack/Email/Webhook →
+→ Create Incident Ticket →
+→ Update UI with Red Alert
+```
+
+## Database Schema (Monitor Product)
+
+```sql
+-- Connectors table
+CREATE TABLE connectors (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id),
+  name VARCHAR(255) NOT NULL,
+  api_type VARCHAR(50), -- 'rest', 'graphql', 'grpc'
+  base_url TEXT NOT NULL,
+  auth_type VARCHAR(50), -- 'bearer', 'oauth2', 'api_key', 'mTLS'
+  credentials JSONB NOT NULL, -- encrypted
+  status VARCHAR(50), -- 'active', 'error', 'paused'
+  last_check TIMESTAMP,
+  error_message TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- API endpoints discovered/configured
+CREATE TABLE endpoints (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  connector_id UUID NOT NULL REFERENCES connectors(id),
+  path VARCHAR(500) NOT NULL,
+  method VARCHAR(10), -- GET, POST, etc.
+  description TEXT,
+  operation_id VARCHAR(255),
+  created_at TIMESTAMP
+);
+
+-- Schema versions (for change detection)
+CREATE TABLE schema_versions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  endpoint_id UUID NOT NULL REFERENCES endpoints(id),
+  schema_json JSONB NOT NULL, -- full OpenAPI schema
+  hash VARCHAR(64) NOT NULL, -- SHA256 of schema for quick comparison
+  detected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Changes detected
+CREATE TABLE schema_changes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  endpoint_id UUID NOT NULL REFERENCES endpoints(id),
+  from_version_id UUID REFERENCES schema_versions(id),
+  to_version_id UUID REFERENCES schema_versions(id),
+  change_type VARCHAR(50), -- 'breaking', 'non_breaking', 'deprecated'
+  description TEXT,
+  old_schema JSONB,
+  new_schema JSONB,
+  impact_summary JSONB,
+  detected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Real-time metrics
+CREATE TABLE api_metrics (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  endpoint_id UUID NOT NULL REFERENCES endpoints(id),
+  timestamp TIMESTAMP NOT NULL,
+  response_time_ms INTEGER,
+  status_code INTEGER,
+  error_message TEXT,
+  request_size_bytes INTEGER,
+  response_size_bytes INTEGER,
+  indexed at (timestamp DESC) -- for time-series queries
+);
+
+-- Alerts and incidents
+CREATE TABLE alerts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  endpoint_id UUID NOT NULL REFERENCES endpoints(id),
+  alert_type VARCHAR(50), -- 'schema_change', 'high_error_rate', 'latency_spike'
+  severity VARCHAR(20), -- 'critical', 'warning', 'info'
+  message TEXT,
+  is_acknowledged BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+## API Endpoints (Monitor Product)
+
+```
+POST   /api/v1/connectors              - Create new connector
+GET    /api/v1/connectors              - List connectors
+GET    /api/v1/connectors/{id}         - Get connector details
+PATCH  /api/v1/connectors/{id}         - Update connector
+DELETE /api/v1/connectors/{id}         - Delete connector
+
+GET    /api/v1/connectors/{id}/endpoints   - List endpoints
+GET    /api/v1/endpoints/{id}/metrics      - Get metrics for endpoint
+GET    /api/v1/endpoints/{id}/changes      - Get change history
+GET    /api/v1/endpoints/{id}/alerts       - Get active alerts
+
+WS     /ws/v1/connectors/{id}/realtime     - WebSocket for live updates
+```
+
+## Monitoring & Alerting
+
+**Key Metrics to Track:**
+- API uptime percentage (target: 99.9%)
+- Average response time (target: <200ms)
+- Error rate (target: <0.5%)
+- Number of breaking changes detected
+- Alert delivery time (target: <30 seconds)
+
+**Alerting Rules:**
+1. Response time > 2000ms for 5+ consecutive calls → YELLOW alert
+2. Error rate > 5% → RED alert
+3. Breaking change detected → CRITICAL alert
+4. API endpoint down for 5+ minutes → CRITICAL alert
+
+---
+
+# PAGE 4: PRODUCT 2 - API FLOW BUILDER (LOW-CODE)
+
+## Product Overview
+Visual low-code workflow builder enabling non-technical users to design API orchestrations, data transformations, and business logic without writing code.
+
+## Core Features
+
+### Feature 1: Visual Workflow Canvas
+- Drag-and-drop flow builder (similar to Zapier/Make)
+- Node types: Trigger, Action, Decision, Loop, Transform, Merge
+- Pre-built connectors for 100+ APIs (Stripe, Slack, Salesforce, etc.)
+- Custom HTTP node for connecting any API
+
+### Feature 2: Data Mapping & Transformation
+- JSON path-based field mapping
+- Built-in transformations: filter, map, aggregate, format
+- Expression builder for conditional logic
+- Variable storage across workflow steps
+
+### Feature 3: Testing & Debugging
+- Test run with sample data
+- Step-by-step debugging view
+- Error messages with suggested fixes
+- Execution history with logs
+
+### Feature 4: Deployment & Execution
+- One-click deployment to production
+- Scheduled execution (cron)
+- Event-driven triggers (webhooks)
+- Manual trigger via UI
+- Version history with rollback
+
+## System Design
+
+### Component Architecture
+```
+┌──────────────────────────────────┐
+│   Builder UI (React Canvas)      │
+│ - Drag-drop | Properties Panel   │
+│ - Preview | Test | Deploy        │
+└──────────────┬───────────────────┘
+               │
+┌──────────────▼───────────────────┐
+│     Builder API Gateway          │
+│ - Validate | Authorize | Rate    │
+└──────────────┬───────────────────┘
+               │
+┌──────────────▼───────────────────┐
+│    Workflow Engine Service       │
+│ ┌─────────────────────────────┐  │
+│ │ 1. Parser                   │  │
+│ │ 2. Validator                │  │
+│ │ 3. Executor                 │  │
+│ │ 4. Event Dispatcher         │  │
+│ │ 5. Retry Handler            │  │
+│ └─────────────────────────────┘  │
+└──────────────┬───────────────────┘
+               │
+    ┌──────────┼──────────┐
+    │          │          │
+┌───▼──┐   ┌──▼──┐   ┌───▼─┐
+│  PG  │   │Queue│   │ API │
+│      │   │     │   │     │
+└──────┘   └─────┘   └─────┘
+```
+
+### Workflow Execution Flow
+
+**1. Design Phase**
+```
+User → Drag nodes → Connect nodes → Map fields → 
+Save workflow (stored as DAG in DB)
+```
+
+**2. Test Phase**
+```
+User provides test data →
+Engine creates isolated execution environment →
+Runs workflow step-by-step →
+Returns outputs with logs
+```
+
+**3. Deploy Phase**
+```
+Workflow deployed to production →
+Assigned unique URL/webhook endpoint →
+API Trigger endpoint created →
+Scheduled jobs registered
+```
+
+**4. Runtime Execution**
+```
+Trigger activated (webhook/schedule) →
+Fetch workflow DAG from DB →
+Validate inputs →
+Execute nodes in topological order →
+Handle retries on failure →
+Store execution logs →
+Send webhook callback with results
+```
+
+## Database Schema (Flow Builder Product)
+
+```sql
+-- Workflows
+CREATE TABLE workflows (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id),
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  status VARCHAR(50), -- 'draft', 'active', 'archived'
+  dag_json JSONB NOT NULL, -- directed acyclic graph definition
+  trigger_config JSONB, -- webhook, schedule, manual
+  created_by UUID REFERENCES users(id),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Workflow nodes (steps in a workflow)
+CREATE TABLE workflow_nodes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workflow_id UUID NOT NULL REFERENCES workflows(id),
+  node_id VARCHAR(50) NOT NULL, -- unique within workflow (node_1, node_2)
+  node_type VARCHAR(50), -- 'trigger', 'action', 'decision', 'transform'
+  config JSONB NOT NULL, -- node-specific config
+  input_mapping JSONB, -- field mappings from previous nodes
+  position_x INTEGER, -- for UI canvas
+  position_y INTEGER,
+  created_at TIMESTAMP
+);
+
+-- Workflow edges (connections between nodes)
+CREATE TABLE workflow_edges (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workflow_id UUID NOT NULL REFERENCES workflows(id),
+  from_node_id VARCHAR(50) NOT NULL,
+  to_node_id VARCHAR(50) NOT NULL,
+  condition JSONB, -- for conditional edges
+  FOREIGN KEY (from_node_id) REFERENCES workflow_nodes(node_id),
+  FOREIGN KEY (to_node_id) REFERENCES workflow_nodes(node_id)
+);
+
+-- Pre-built connectors/integrations
+CREATE TABLE connectors (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  icon_url TEXT,
+  auth_type VARCHAR(50), -- 'oauth', 'api_key', 'basic'
+  base_url TEXT,
+  available_actions JSONB, -- list of available operations
+  created_at TIMESTAMP
+);
+
+-- User credentials for connectors
+CREATE TABLE connector_credentials (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id),
+  connector_id UUID NOT NULL REFERENCES connectors(id),
+  user_id UUID NOT NULL REFERENCES users(id),
+  credentials JSONB NOT NULL, -- encrypted (tokens, API keys)
+  created_at TIMESTAMP
+);
+
+-- Workflow executions
+CREATE TABLE workflow_executions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workflow_id UUID NOT NULL REFERENCES workflows(id),
+  org_id UUID NOT NULL,
+  trigger_type VARCHAR(50), -- 'manual', 'webhook', 'schedule'
+  input_data JSONB,
+  status VARCHAR(50), -- 'running', 'success', 'failed', 'timeout'
+  output_data JSONB,
+  error_message TEXT,
+  execution_time_ms INTEGER,
+  started_at TIMESTAMP,
+  completed_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Execution logs (per node)
+CREATE TABLE execution_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  execution_id UUID NOT NULL REFERENCES workflow_executions(id),
+  node_id VARCHAR(50) NOT NULL,
+  status VARCHAR(50), -- 'running', 'success', 'failed'
+  input JSONB,
+  output JSONB,
+  error_message TEXT,
+  duration_ms INTEGER,
+  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+## API Endpoints (Flow Builder)
+
+```
+POST   /api/v1/workflows                 - Create workflow
+GET    /api/v1/workflows                 - List workflows
+GET    /api/v1/workflows/{id}            - Get workflow details
+PATCH  /api/v1/workflows/{id}            - Update workflow
+DELETE /api/v1/workflows/{id}            - Delete workflow
+POST   /api/v1/workflows/{id}/test       - Test run workflow
+POST   /api/v1/workflows/{id}/deploy     - Deploy workflow
+POST   /api/v1/workflows/{id}/execute    - Manually execute
+
+GET    /api/v1/connectors                - List available connectors
+POST   /api/v1/connectors/{id}/auth      - Authenticate connector
+
+GET    /api/v1/workflows/{id}/executions - Execution history
+GET    /api/v1/executions/{id}/logs      - Execution logs
+
+POST   /webhook/{workflow-id}            - Webhook trigger endpoint
+```
+
+## Built-in Nodes Library
+
+| Node Type | Examples | Use Cases |
+|-----------|----------|-----------|
+| **Trigger** | Webhook, Schedule, Manual | Start workflow |
+| **Action** | HTTP Call, Send Email, Create Record | External integrations |
+| **Decision** | If/Else, Switch | Conditional logic |
+| **Transform** | Map Fields, Format Data, Calculate | Data manipulation |
+| **Loop** | For Each, While | Iterate collections |
+| **Merge** | Join Results, Aggregate | Combine data |
+| **Wait** | Delay, Wait for Event | Timing control |
+
+---
+
+# PAGE 5: PRODUCT 3 - DATABASE SCHEMA EVOLUTION
+
+## Product Overview
+Track and manage database schema changes across environments with automatic migration generation, impact analysis, and rollback capabilities.
+
+## Core Features
+
+### Feature 1: Schema Discovery & Tracking
+- Auto-discover database schemas (PostgreSQL, MySQL, MSSQL)
+- Track all table, column, index, and constraint changes
+- Version control for schemas (similar to Git)
+- Diff viewer for comparing versions
+
+### Feature 2: Migration Generation
+- Automatic SQL migration script generation
+- Support for zero-downtime migrations
+- Rollback script generation
+- Preview mode before applying changes
+
+### Feature 3: Impact Analysis
+- Identify dependent views, stored procedures, triggers
+- Estimate migration time and data size
+- Risk assessment for breaking changes
+- Downstream application impact report
+
+### Feature 4: Deployment Management
+- Staged deployment (dev → staging → prod)
+- Approval workflow for migrations
+- Dry-run before actual execution
+- Automated rollback on failure
+
+## System Design
+
+### Component Architecture
+```
+┌──────────────────────────────┐
+│  Schema UI (Next.js)         │
+│ - Schema Diff | Timeline     │
+│ - Migration Planner          │
+└──────────────┬───────────────┘
+               │
+┌──────────────▼───────────────┐
+│   Schema API Gateway         │
+└──────────────┬───────────────┘
+               │
+┌──────────────▼───────────────┐
+│  Schema Evolution Service    │
+│ ┌────────────────────────┐   │
+│ │ 1. Discoverer          │   │
+│ │ 2. Diff Analyzer       │   │
+│ │ 3. Migration Generator │   │
+│ │ 4. Impact Analyzer     │   │
+│ │ 5. Executor            │   │
+│ └────────────────────────┘   │
+└──────────────┬───────────────┘
+               │
+    ┌──────────┼───────────┐
+    │          │           │
+┌───▼──┐  ┌───▼────┐  ┌──▼────┐
+│  PG  │  │Target  │  │Audit  │
+│      │  │DB      │  │Log    │
+└──────┘  └────────┘  └───────┘
+```
+
+### Schema Tracking Workflow
+
+**1. Discovery Phase**
+```
+User connects database → 
+Auto-discover all objects (tables, indexes, views) →
+Generate schema fingerprint (hash) →
+Store initial schema snapshot →
+Create baseline version
+```
+
+**2. Change Detection**
+```
+Scheduled job (every 24h) →
+Re-discover database schema →
+Compare with last snapshot →
+Detect new/modified/deleted objects →
+Alert user to pending changes
+```
+
+**3. Migration Generation**
+```
+User reviews detected changes →
+Click "Generate Migration" →
+AI-powered script generation (with safeguards) →
+Review generated SQL →
+Approve → Stored in DB with status "pending"
+```
+
+**4. Deployment**
+```
+Dev deployment → Auto-apply →
+Staging deployment → Requires approval →
+Production deployment → 
+→ Dry-run first →
+→ Execute with transaction wrap →
+→ Verify success →
+→ Rollback on error
+```
+
+## Database Schema (Schema Evolution Product)
+
+```sql
+-- Connected databases
+CREATE TABLE database_connections (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id),
+  name VARCHAR(255) NOT NULL,
+  db_type VARCHAR(50), -- 'postgres', 'mysql', 'mssql'
+  host VARCHAR(255) NOT NULL,
+  port INTEGER NOT NULL,
+  database VARCHAR(255) NOT NULL,
+  credentials JSONB NOT NULL, -- encrypted
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Schema snapshots (versions)
+CREATE TABLE schema_snapshots (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  db_connection_id UUID NOT NULL REFERENCES database_connections(id),
+  snapshot_version INTEGER NOT NULL,
+  schema_json JSONB NOT NULL, -- full schema definition
+  hash VARCHAR(64) NOT NULL, -- for quick comparison
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tables
+CREATE TABLE schema_tables (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  snapshot_id UUID NOT NULL REFERENCES schema_snapshots(id),
+  table_name VARCHAR(255) NOT NULL,
+  schema_name VARCHAR(255),
+  table_type VARCHAR(50), -- 'table', 'view', 'materialized_view'
+  table_definition JSONB,
+  created_at TIMESTAMP
+);
+
+-- Columns
+CREATE TABLE schema_columns (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  table_id UUID NOT NULL REFERENCES schema_tables(id),
+  column_name VARCHAR(255) NOT NULL,
+  data_type VARCHAR(100),
+  is_nullable BOOLEAN,
+  default_value TEXT,
+  is_primary_key BOOLEAN,
+  ordinal_position INTEGER,
+  created_at TIMESTAMP
+);
+
+-- Indexes
+CREATE TABLE schema_indexes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  table_id UUID NOT NULL REFERENCES schema_tables(id),
+  index_name VARCHAR(255) NOT NULL,
+  columns JSONB, -- array of column names
+  is_unique BOOLEAN,
+  index_type VARCHAR(50), -- 'btree', 'hash', 'gin'
+  created_at TIMESTAMP
+);
+
+-- Foreign keys
+CREATE TABLE schema_foreign_keys (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  table_id UUID NOT NULL REFERENCES schema_tables(id),
+  fk_name VARCHAR(255) NOT NULL,
+  column_name VARCHAR(255) NOT NULL,
+  referenced_table VARCHAR(255) NOT NULL,
+  referenced_column VARCHAR(255) NOT NULL,
+  on_delete_action VARCHAR(50),
+  created_at TIMESTAMP
+);
+
+-- Migrations
+CREATE TABLE migrations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  db_connection_id UUID NOT NULL REFERENCES database_connections(id),
+  from_snapshot_id UUID REFERENCES schema_snapshots(id),
+  to_snapshot_id UUID REFERENCES schema_snapshots(id),
+  migration_type VARCHAR(50), -- 'auto_generated', 'manual'
+  up_sql TEXT NOT NULL, -- apply migration
+  down_sql TEXT NOT NULL, -- rollback
+  status VARCHAR(50), -- 'pending', 'approved', 'applied', 'failed', 'rolled_back'
+  description TEXT,
+  risk_level VARCHAR(50), -- 'low', 'medium', 'high', 'critical'
+  estimated_duration_seconds INTEGER,
+  created_by UUID REFERENCES users(id),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  applied_at TIMESTAMP,
+  applied_by UUID REFERENCES users(id)
+);
+
+-- Migration execution logs
+CREATE TABLE migration_executions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  migration_id UUID NOT NULL REFERENCES migrations(id),
+  environment VARCHAR(50), -- 'dev', 'staging', 'prod'
+  status VARCHAR(50), -- 'success', 'failed', 'rolled_back'
+  error_message TEXT,
+  execution_time_seconds INTEGER,
+  started_at TIMESTAMP,
+  completed_at TIMESTAMP
+);
+
+-- Change history (for audit)
+CREATE TABLE schema_changes_audit (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  snapshot_from_id UUID REFERENCES schema_snapshots(id),
+  snapshot_to_id UUID REFERENCES schema_snapshots(id),
+  change_type VARCHAR(50), -- 'add_table', 'drop_column', 'add_index'
+  object_type VARCHAR(50),
+  object_name VARCHAR(255),
+  change_details JSONB,
+  detected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+## API Endpoints (Schema Evolution)
+
+```
+POST   /api/v1/databases                   - Connect database
+GET    /api/v1/databases                   - List databases
+GET    /api/v1/databases/{id}/schema       - Get current schema
+GET    /api/v1/databases/{id}/snapshots    - Schema versions
+POST   /api/v1/databases/{id}/snapshot     - Create snapshot
+GET    /api/v1/databases/{id}/migrations   - List migrations
+
+POST   /api/v1/migrations                  - Create migration
+GET    /api/v1/migrations/{id}             - Get migration details
+PATCH  /api/v1/migrations/{id}             - Update migration status
+POST   /api/v1/migrations/{id}/approve     - Approve migration
+POST   /api/v1/migrations/{id}/execute     - Execute migration
+POST   /api/v1/migrations/{id}/rollback    - Rollback migration
+
+GET    /api/v1/migrations/{id}/dry-run     - Preview execution
+GET    /api/v1/databases/{id}/impact       - Impact analysis
+```
+
+---
+
+# PAGE 6: PRODUCT 4 - CLOUD AGNOSTIC TESTING CONSOLE
+
+## Product Overview
+Unified testing console for validating APIs, workflows, and integrations across Azure, AWS, GCP, and on-premise environments.
+
+## Core Features
+
+### Feature 1: Multi-Cloud Test Environment Setup
+- One-click provisioning of isolated test environments
+- Support for Azure, AWS, GCP, Docker (on-premise)
+- Environment configuration templates
+- Cost optimization with auto-cleanup
+
+### Feature 2: Test Suite Builder
+- Record/replay testing (capture real API calls)
+- Parameterized tests with CSV/JSON data sources
+- Load testing (simulate concurrent users)
+- Security testing (OWASP top 10)
+
+### Feature 3: Execution & Reporting
+- Real-time test execution dashboard
+- Pass/fail with detailed error messages
+- Performance metrics (latency, throughput)
+- Compliance report generation (SOC2, PCI, HIPAA)
+
+### Feature 4: Integration with CI/CD
+- GitHub Actions, GitLab CI, Jenkins integration
+- Automated testing on every deployment
+- Test result tracking over time
+- Failure trend analysis
+
+## System Design
+
+### Component Architecture
+```
+┌────────────────────────────────┐
+│   Test Console UI (React)      │
+│ - Test Builder | Execution     │
+│ - Results | Reports            │
+└────────────────┬───────────────┘
+                 │
+┌─────────────────▼──────────────┐
+│    Test API Gateway           │
+└────────────────┬────────────────┘
+                 │
+┌─────────────────▼──────────────┐
+│    Test Engine Service         │
+│ ┌──────────────────────────┐   │
+│ │ 1. Test Parser           │   │
+│ │ 2. Environment Manager   │   │
+│ │ 3. Test Runner           │   │
+│ │ 4. Load Generator        │   │
+│ │ 5. Report Generator      │   │
+│ └──────────────────────────┘   │
+└────────────────┬────────────────┘
+                 │
+    ┌────────────┼────────────┬──────────┐
+    │            │            │          │
+┌───▼──┐   ┌────▼────┐ ┌────▼───┐  ┌──▼──┐
+│  PG  │   │  Azure  │ │ AWS    │  │GCP  │
+│      │   │ Instance│ │EC2     │  │     │
+└──────┘   └─────────┘ └────────┘  └─────┘
+```
+
+### Test Execution Flow
+
+**1. Environment Provisioning**
+```
+User selects cloud provider (Azure/AWS/GCP/Docker) →
+System provisions isolated test environment →
+Auto-generates connection credentials →
+Stores credentials in secure vault →
+Test environment ready notification
+```
+
+**2. Test Execution**
+```
+User uploads test suite (JSON/YAML) →
+System parses test definitions →
+For each test:
+  → Set up test data
+  → Execute test steps (API calls, validations)
+  → Capture response
+  → Run assertions
+  → Store result
+→ Aggregate results
+→ Generate report
+```
+
+**3. Load Testing**
+```
+User configures: target URL, concurrent users, duration →
+System starts VU (virtual user) generation →
+Each VU executes test scenario repeatedly →
+Collect response times, errors →
+Generate performance report with charts
+```
+
+## Database Schema (Test Console)
+
+```sql
+-- Test environments
+CREATE TABLE test_environments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id),
+  name VARCHAR(255) NOT NULL,
+  cloud_provider VARCHAR(50), -- 'azure', 'aws', 'gcp', 'docker'
+  cloud_config JSONB NOT NULL, -- provider-specific config
+  status VARCHAR(50), -- 'provisioning', 'ready', 'terminating'
+  connection_string TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  expires_at TIMESTAMP
+);
+
+-- Test suites
+CREATE TABLE test_suites (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id),
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  test_definition JSONB NOT NULL, -- Array of test cases
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Individual tests
+CREATE TABLE tests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  suite_id UUID NOT NULL REFERENCES test_suites(id),
+  test_name VARCHAR(255) NOT NULL,
+  test_type VARCHAR(50), -- 'api', 'load', 'security', 'integration'
+  test_steps JSONB NOT NULL, -- array of steps
+  assertions JSONB NOT NULL, -- array of assertions
+  created_at TIMESTAMP
+);
+
+-- Test execution records
+CREATE TABLE test_executions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  suite_id UUID NOT NULL REFERENCES test_suites(id),
+  environment_id UUID NOT NULL REFERENCES test_environments(id),
+  status VARCHAR(50), -- 'running', 'passed', 'failed'
+  total_tests INTEGER,
+  passed_tests INTEGER,
+  failed_tests INTEGER,
+  skipped_tests INTEGER,
+  duration_seconds INTEGER,
+  started_at TIMESTAMP,
+  completed_at TIMESTAMP
+);
+
+-- Individual test results
+CREATE TABLE test_results (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  execution_id UUID NOT NULL REFERENCES test_executions(id),
+  test_id UUID NOT NULL REFERENCES tests(id),
+  status VARCHAR(50), -- 'passed', 'failed', 'skipped'
+  error_message TEXT,
+  response_body TEXT,
+  response_time_ms INTEGER,
+  assertions_passed INTEGER,
+  assertions_failed INTEGER,
+  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Load testing results
+CREATE TABLE load_test_results (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  execution_id UUID NOT NULL REFERENCES test_executions(id),
+  virtual_users INTEGER,
+  requests_per_second DECIMAL,
+  response_time_p50 INTEGER,
+  response_time_p95 INTEGER,
+  response_time_p99 INTEGER,
+  error_rate DECIMAL,
+  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+## API Endpoints (Test Console)
+
+```
+POST   /api/v1/environments                - Create test environment
+GET    /api/v1/environments                - List environments
+DELETE /api/v1/environments/{id}           - Terminate environment
+
+POST   /api/v1/test-suites                 - Create test suite
+GET    /api/v1/test-suites                 - List test suites
+POST   /api/v1/test-suites/{id}/execute    - Execute tests
+
+POST   /api/v1/test-suites/{id}/load-test  - Run load test
+GET    /api/v1/test-executions/{id}        - Get execution results
+GET    /api/v1/test-results/{id}           - Get detailed results
+
+POST   /api/v1/tests/{id}/record           - Record test from live API call
+```
+
+---
+
+# PAGE 7: CLOUD INFRASTRUCTURE (AZURE PRIMARY + MULTI-CLOUD SUPPORT)
+
+## Azure Architecture (Primary)
+
+### Regional Deployment
+```
+Azure Region: East US (Primary) | West US (Failover)
+├─ App Service Plan (B1 → B2 for scale)
+├─ PostgreSQL Flexible Server
+├─ Azure Cache for Redis
+├─ Application Insights
+├─ Azure Key Vault
+├─ Azure Storage (Blob + Queues)
+├─ Azure Service Bus
+├─ Application Gateway (Global Load Balancing)
+└─ CDN (Azure Front Door)
+```
+
+### High-Level Azure Resource Architecture
+
+```
+┌──────────────────────────────────────────────────┐
+│           Azure Front Door (Global LB)           │
+│         + CDN + WAF (DDoS Protection)            │
+└───────────────────┬──────────────────────────────┘
+                    │
+        ┌───────────┴───────────┐
+        │                       │
+┌───────▼──────────┐   ┌───────▼──────────┐
+│   East US        │   │   West US        │
+│   Region         │   │   Region         │
+├──────────────────┤   ├──────────────────┤
+│ App Service Plan │   │ App Service Plan │
+│ (3 instances)    │   │ (2 instances)    │
+│                  │   │                  │
+│ PostgreSQL       │   │ PostgreSQL       │
+│ (Primary)        │   │ (Read Replica)   │
+│                  │   │                  │
+│ Redis Cache      │   │ Redis Cache      │
+│ (Primary)        │   │ (Replication)    │
+└──────────────────┘   └──────────────────┘
+        │
+        ├─ Key Vault (secrets, keys)
+        ├─ Storage Account (backups, exports)
+        ├─ Service Bus (async messaging)
+        ├─ Application Insights (monitoring)
+        ├─ Log Analytics (logs)
+        └─ API Management (API versioning + rate limiting)
+```
+
+## AWS Cross-Cloud Support
+
+### AWS Resources (for testing customers' infrastructure)
+
+```
+AWS Region: us-east-1
+├─ EC2 instances (for test environments)
+├─ RDS PostgreSQL (test databases)
+├─ ElastiCache (Redis alternative)
+├─ Lambda (for serverless connectors)
+├─ CloudWatch (monitoring)
+├─ VPC + Security Groups
+└─ S3 (backups)
+```
+
+### Cross-Cloud Connector Pattern
+
+```typescript
+// Unified interface for multi-cloud
+interface CloudConnector {
+  authenticate(): Promise<void>;
+  provisionEnvironment(config): Promise<Environment>;
+  executeTest(testSuite): Promise<Result>;
+  cleanupResources(): Promise<void>;
+}
+
+// Implementations
+class AzureConnector implements CloudConnector { ... }
+class AWSConnector implements CloudConnector { ... }
+class GCPConnector implements CloudConnector { ... }
+class DockerConnector implements CloudConnector { ... }
+```
+
+## Cost Optimization
+
+### Azure Cost Breakdown (Monthly)
+
+| Resource | SKU | Monthly Cost | Notes |
+|----------|-----|-------------|-------|
+| App Service | B1 (3x) | $300 | Auto-scale to B2 at 80% CPU |
+| PostgreSQL | Burstable B1ms | $150 | 32GB storage, auto-backup |
+| Redis Cache | Basic 1GB | $50 | Standard tier for HA |
+| Service Bus | Standard | $15 | Messaging queue |
+| Application Insights | Pay-as-you-go | $50-100 | Based on data ingestion |
+| Storage Account | Hot tier | $25 | Standard LRS replication |
+| Key Vault | Standard | $0.6 | 100K operations free tier |
+| **Total** | | **$590-650** | |
+
+**Cost Optimization Strategies:**
+1. **Reserved Instances**: 1-year commitment → 30% discount (→ $420/mo)
+2. **Spot VMs**: For non-critical test runners → 70% savings
+3. **Auto-scaling**: Down to B0 during low-traffic periods
+4. **Multi-region**: Only if revenue > $50K MRR
+
+### Cost Estimation Calculator (Monthly)
+
+**Small Plan** (< 50 API monitors)
+- Infrastructure: $400
+- Data transfer: $20
+- Support: $0
+- **Total**: $420/month
+
+**Professional Plan** (50-500 API monitors + 10 workflows)
+- Infrastructure: $1,200
+- Data transfer: $50
+- Monitoring: $100
+- **Total**: $1,350/month
+
+**Enterprise Plan** (1000+ endpoints + multi-region)
+- Infrastructure: $3,500
+- Data transfer: $300
+- Dedicated support: $2,000
+- Multi-region replication: $1,000
+- **Total**: $6,800/month
+
+---
+
+# PAGE 8: DATABASE & DATA ARCHITECTURE
+
+## Master Data Schema (Shared Across Products)
+
+```sql
+-- Organizations (Multi-tenancy foundation)
+CREATE TABLE organizations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(255) NOT NULL UNIQUE,
+  industry VARCHAR(100),
+  country VARCHAR(2),
+  stripe_customer_id VARCHAR(255),
+  subscription_tier VARCHAR(50), -- 'free', 'professional', 'enterprise'
+  max_api_monitors INTEGER,
+  max_workflows INTEGER,
+  max_team_members INTEGER,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Users
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id),
+  email VARCHAR(255) NOT NULL,
+  name VARCHAR(255),
+  role VARCHAR(50), -- 'owner', 'admin', 'member', 'viewer'
+  azure_ad_id VARCHAR(255) UNIQUE,
+  mfa_enabled BOOLEAN DEFAULT FALSE,
+  last_login TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(org_id, email)
+);
+
+-- API Keys for service authentication
+CREATE TABLE api_keys (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id),
+  user_id UUID NOT NULL REFERENCES users(id),
+  key_hash VARCHAR(64), -- SHA256 hash of key
+  name VARCHAR(255),
+  last_used TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  expires_at TIMESTAMP
+);
+
+-- Audit logs (compliance)
+CREATE TABLE audit_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id),
+  user_id UUID REFERENCES users(id),
+  action VARCHAR(255), -- 'create_connector', 'delete_workflow', etc.
+  resource_type VARCHAR(50),
+  resource_id VARCHAR(255),
+  changes JSONB, -- old vs new values
+  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Usage metrics (for billing)
+CREATE TABLE usage_metrics (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id),
+  year_month VARCHAR(7), -- 'YYYY-MM' for grouping
+  api_monitors_count INTEGER,
+  workflows_executed INTEGER,
+  api_calls_monitored BIGINT,
+  test_executions INTEGER,
+  data_stored_gb DECIMAL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(org_id, year_month)
+);
+
+-- Billing transactions
+CREATE TABLE billing_transactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id),
+  invoice_id VARCHAR(255) UNIQUE,
+  amount_cents INTEGER,
+  currency VARCHAR(3), -- 'USD', 'EUR', etc.
+  status VARCHAR(50), -- 'draft', 'sent', 'paid', 'overdue'
+  billing_period_start DATE,
+  billing_period_end DATE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  due_date DATE,
+  paid_date DATE
+);
+```
+
+## Data Retention & Lifecycle Policies
+
+```sql
+-- Metrics auto-purge (keep 1 year)
+DELETE FROM api_metrics 
+WHERE timestamp < CURRENT_TIMESTAMP - INTERVAL '1 year';
+
+-- Execution logs auto-archive (keep 90 days)
+DELETE FROM execution_logs 
+WHERE timestamp < CURRENT_TIMESTAMP - INTERVAL '90 days';
+
+-- Test results auto-purge (keep 6 months)
+DELETE FROM test_results 
+WHERE timestamp < CURRENT_TIMESTAMP - INTERVAL '6 months';
+```
+
+## Backup & Disaster Recovery
+
+**Backup Strategy:**
+- **Frequency**: Daily full backup + hourly transaction logs
+- **Retention**: 30 days
+- **Location**: Geo-replicated Azure Storage (East US + West US)
+- **Recovery Time Objective (RTO)**: 1 hour
+- **Recovery Point Objective (RPO)**: 1 hour
+
+**Backup Command:**
+```bash
+# Automated daily backup
+az postgres flexible-server backup create \
+  --resource-group saas-mvp-rg \
+  --server-name saas-mvp-pg \
+  --backup-name daily-$(date +%Y%m%d)
+```
+
+---
+
+# PAGE 9: SECURITY, COMPLIANCE & AUTHENTICATION
+
+## Authentication Architecture
+
+### OAuth 2.0 + Azure AD B2C Flow
+
+```
+┌─────────┐                           ┌──────────────┐
+│ Browser │──1. Login Request────────→│ Azure AD B2C │
+│         │                           └──────────────┘
+│         │◄──2. Redirect to Login────┐
+│         │                           │
+│         ├──3. User enters creds────→├─ Verifies password
+│         │◄──4. MFA Challenge (SMS)──┤
+│         │                           │
+│         ├──5. MFA Code────────────→├─ Validates
+│         │◄──6. Auth Code + Token───┐
+└─────────┘                           └──────────────┘
+    │
+    └──7. POST /token + Auth Code
+        │
+        └───→ Backend validates token
+            │
+            └──8. Generate JWT (15min expiry)
+                │
+                └──9. Return JWT to client
+                    │
+                    └──10. Client stores in httpOnly cookie
+```
+
+### JWT Token Structure
+```json
+{
+  "header": {
+    "alg": "RS256",
+    "kid": "key_id_from_azure"
+  },
+  "payload": {
+    "sub": "user_uuid",
+    "org_id": "org_uuid",
+    "email": "user@company.com",
+    "roles": ["admin"],
+    "aud": "https://api.saasplatform.com",
+    "iss": "https://login.microsoftonline.com",
+    "iat": 1708052400,
+    "exp": 1708053300
+  },
+  "signature": "..."
+}
+```
+
+## Data Encryption
+
+### In-Transit Encryption
+- **TLS 1.3** for all API endpoints
+- **HTTPS-only** (HTTP redirects to HTTPS)
+- **Certificate**: Azure-managed certificate (auto-renewal)
+
+### At-Rest Encryption
+- **Database**: PostgreSQL Transparent Data Encryption (TDE)
+- **Secrets**: Azure Key Vault with customer-managed keys (CMK)
+- **API Credentials**: AES-256 GCM encryption before storing in DB
+- **Backups**: Encrypted in Azure Storage (server-side encryption)
+
+### Encryption Key Management
+```bash
+# Store secrets in Azure Key Vault
+az keyvault secret set \
+  --vault-name saas-platform-kv \
+  --name database-password \
+  --value "$(openssl rand -base64 32)"
+
+# Application retrieves from Key Vault at runtime
+const secret = await keyVaultClient.getSecret("database-password");
+```
+
+## Compliance Standards
+
+| Standard | Coverage | Status |
+|----------|----------|--------|
+| **SOC 2 Type II** | Data security, availability | Q3 2026 |
+| **ISO 27001** | Information security mgmt | Q4 2026 |
+| **GDPR** | EU data privacy | Compliant |
+| **CCPA** | California privacy | Compliant |
+| **HIPAA** | Healthcare data (optional) | Q2 2026 |
+| **PCI DSS** | Not applicable (no card data) | N/A |
+
+## Rate Limiting & DDoS Protection
+
+### API Rate Limits (per user tier)
+
+| Tier | Requests/min | Concurrent Connections | Burst |
+|------|-------------|------------------------|-------|
+| **Free** | 10 | 1 | 5 requests |
+| **Professional** | 300 | 10 | 50 requests |
+| **Enterprise** | Unlimited | 100+ | Custom |
+
+### Implementation
+```typescript
+// Express middleware
+import rateLimit from 'express-rate-limit';
+
+const limiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: getUserRateLimit(req.user.tier), // Dynamic per tier
+  keyGenerator: (req) => req.user.org_id, // Per org
+  skip: (req) => req.user.tier === 'enterprise', // Enterprise bypass
+});
+
+app.use('/api/v1/', limiter);
+```
+
+### DDoS Protection
+- **Azure DDoS Protection Standard**: $2,944/month (mandatory for production)
+- **WAF Rules**: Block malicious patterns, SQL injection, XSS
+- **Rate limiting**: API Gateway level + Application level
+
+---
+
+# PAGE 10: IMPLEMENTATION TIMELINE & DEVOPS STRATEGY
+
+## 19-Day Implementation Roadmap
+
+### Week 1: Infrastructure & Foundation
+
+**Day 1-2: Azure Infrastructure Setup**
+- Deploy Bicep templates (PostgreSQL, App Service, Redis)
+- Create CI/CD pipelines (GitHub Actions)
+- Set up monitoring (Application Insights + Log Analytics)
+- **Deliverable**: Azure resources running, CI/CD functional
+
+**Day 3-4: Authentication & Base API**
+- Integrate Azure AD B2C
+- Implement JWT token generation/validation
+- Create base Express server with middleware
+- Write auth tests
+- **Deliverable**: Login flow working, protected APIs
+
+**Day 5-7: Database Schema & Multi-Tenancy**
+- Finalize Prisma schema (all 4 products)
+- Implement row-level security policies
+- Create database migrations
+- Seed test data
+- **Deliverable**: Database fully initialized, multi-tenancy working
+
+### Week 2: Product 1 (API Monitor)
+
+**Day 8-9: API Connector & Discovery**
+- Build connector management endpoints
+- Implement schema discovery (OpenAPI parser)
+- Create real-time monitoring loop
+- **Deliverable**: Can add API connector and fetch schema
+
+**Day 10-11: Change Detection & Alerting**
+- Implement schema diff algorithm
+- Build alert system (Slack/Email/Webhook)
+- Create WebSocket handler for real-time updates
+- **Deliverable**: Breaking changes detected and alerted
+
+**Day 12: Monitoring Dashboard**
+- Build React dashboard with charts
+- Display metrics (latency, error rate, uptime)
+- Real-time alerts on dashboard
+- **Deliverable**: Monitoring dashboard live
+
+### Week 3: Product 2-4 & Deployment
+
+**Day 13-14: Flow Builder Backend**
+- Workflow DAG parser
+- Node executor (HTTP, decision, transform)
+- Webhook trigger endpoint
+- **Deliverable**: Can create and execute workflows
+
+**Day 15-16: Schema Evolution Backend**
+- Database discovery service
+- Migration generator
+- Impact analyzer
+- **Deliverable**: Can detect schema changes and generate migrations
+
+**Day 17-18: Test Console Backend**
+- Environment provisioner (Azure/AWS/GCP)
+- Test executor
+- Load testing engine
+- **Deliverable**: Can create test environments and run tests
+
+**Day 19: Frontend Integration & Launch**
+- Connect all UIs to backend APIs
+- End-to-end testing
+- Performance optimization
+- **Deliverable**: Entire platform ready for beta launch
+
+## DevOps & CI/CD Pipeline
+
+### GitHub Actions Workflow
+
+```yaml
+name: Deploy to Azure
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run tests
+        run: npm run test
+      
+      - name: Run linter
+        run: npm run lint
+      
+      - name: SonarQube scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONARQUBE_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
+
+  deploy-staging:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Build Docker image
+        run: docker build -t saasplatform:${{ github.sha }} .
+      
+      - name: Push to Azure Container Registry
+        run: |
+          az acr login --name saasplatformacr
+          docker tag saasplatform:${{ github.sha }} saasplatformacr.azurecr.io/saasplatform:latest
+          docker push saasplatformacr.azurecr.io/saasplatform:latest
+      
+      - name: Deploy to App Service (Staging)
+        run: |
+          az webapp deployment slot create \
+            --resource-group saas-mvp-rg \
+            --name api-monitor-app \
+            --slot staging
+          az webapp deployment source config-zip \
+            --resource-group saas-mvp-rg \
+            --name api-monitor-app \
+            --slot staging \
+            --src-path deploy.zip
+
+  smoke-tests:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for deployment
+        run: sleep 30
+      
+      - name: Run smoke tests
+        run: |
+          curl -f https://api-monitor-app-staging.azurewebsites.net/health || exit 1
+          npm run test:e2e -- --baseUrl https://api-monitor-app-staging.azurewebsites.net
+
+  deploy-production:
+    needs: smoke-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Swap slots (Blue-Green Deployment)
+        run: |
+          az webapp deployment slot swap \
+            --resource-group saas-mvp-rg \
+            --name api-monitor-app \
+            --slot staging
+
+  post-deploy:
+    needs: deploy-production
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify team
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: 'Deployment to production complete!'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+```
+
+### Monitoring & Alerting
+
+**Key Metrics to Monitor:**
+- API response time (target: <200ms p95)
+- Error rate (target: <0.5%)
+- Database connection pool usage
+- Memory/CPU utilization
+- Request volume trends
+
+**Alert Triggers:**
+- Response time > 500ms (5+ min) → PagerDuty alert
+- Error rate > 2% → Slack notification
+- Disk usage > 80% → Auto-scale
+- Failed deployments → Slack + email
+
+### Rollback Strategy
+
+**If deployment breaks production:**
+
+```bash
+# Option 1: Swap back to previous slot
+az webapp deployment slot swap \
+  --resource-group saas-mvp-rg \
+  --name api-monitor-app \
+  --slot staging \
+  --action swap
+
+# Option 2: Restore from backup
+az postgres flexible-server restore \
+  --resource-group saas-mvp-rg \
+  --name saas-mvp-pg-restore \
+  --source-server saas-mvp-pg \
+  --restore-point-in-time "2026-02-16T10:00:00Z"
+```
+
+## Monitoring Tools & Configuration
+
+**Application Insights Setup:**
+```bicep
+resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
+  name: 'saas-platform-insights'
+  location: location
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+    RetentionInDays: 30
+  }
+}
+```
+
+**Key Dashboards:**
+1. **Operations Dashboard** - Uptime, latency, errors
+2. **Business Dashboard** - MRR, active users, features used
+3. **Infrastructure Dashboard** - Resource utilization, costs
+4. **Security Dashboard** - Failed logins, unusual access patterns
+
+---
+
+## SUMMARY
+
+This 10-page documentation covers:
+
+✅ **Platform Overview** - 4 products, target market, revenue model
+✅ **Multi-Product Architecture** - Microservices, multi-tenancy, cloud-agnostic
+✅ **Detailed Product Designs** - All 4 products with features, workflows, schemas
+✅ **Azure Infrastructure** - Primary deployment with disaster recovery
+✅ **Multi-Cloud Support** - AWS, GCP, Docker connectors for testing
+✅ **Security & Compliance** - OAuth 2.0, encryption, SOC2/GDPR ready
+✅ **Implementation Timeline** - Day-by-day 19-day roadmap
+✅ **DevOps Strategy** - CI/CD, monitoring, rollback procedures
+✅ **Cost Breakdown** - Detailed Azure costs and optimization strategies
+✅ **Database Design** - Complete schemas for all products with relationships
+
+**Next Steps:**
+1. Review and approve architecture
+2. Start Day 1 Azure infrastructure setup
+3. Begin authentication module development
+4. Setup CI/CD pipelines
+5. Proceed day-by-day with implementation
+
+**Would you like me to:**
+- Expand to 50 pages with detailed code implementations?
+- Create specific module documentation (e.g., complete Flow Builder design)?
+- Generate deployment scripts and IaC templates?
+- Create API contract specifications (OpenAPI/Swagger)?
+
